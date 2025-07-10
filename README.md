@@ -12,4 +12,6 @@
 
 Χρησιμοποίησα και ένα package enums για GenderType & LessonType.
 
-Δημιουργήθηκε η βάση σε MySQL και φόρτωσα δεδομένα για να τρέξω κάποια queries.
+Δημιουργήθηκε η βάση σε MySQL και φόρτωσα δεδομένα για να τρέξω queries με JPQL και Criteria API.
+
+* Στα queries χρησιμοποίησα Parameters για λόγους ασφάλειας με σκοπό να αποφευχθεί το SQL Injection.
