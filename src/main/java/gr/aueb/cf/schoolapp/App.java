@@ -12,6 +12,7 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class App {
@@ -120,40 +121,74 @@ public class App {
                 .getResultList();
         teachers5.forEach(System.out::println);
 
-        // Select for every region => region.title and count inactive teachers per region
-           String sql3 = "SELECT r.title, COUNT(t) FROM Region r LEFT JOIN r.teachers t " +
-                   "WHERE t.active = false OR t.active IS NULL GROUP BY r.title";
-           TypedQuery<Object[]> query7 = em.createQuery(sql3, Object[].class);
+        // Select for every region => region.title and count for inactive teachers per region - JPQL
+        String sql3 = "SELECT r.title, count(t) FROM Region r LEFT JOIN r.teachers t " +
+                "WHERE t.active = false OR t.active IS NULL GROUP BY r.title";
+        TypedQuery<Object[]> query7 = em.createQuery(sql3,Object[].class);
 
-           List<Object[]> inactiveTeachersPerRegion = query7.getResultList();
+        List<Object[]> countInactiveTeachersForAllRegions = query7.getResultList();
 
-           for (Object[] objectsArr : inactiveTeachersPerRegion) {
-               System.out.println("Regions: " + objectsArr[0] + " Teachers: " + objectsArr[1]);
-           }
-
-        // Select for every region => region.title and count inactive teachers per region - Criteria API
-            CriteriaBuilder cb4 = em.getCriteriaBuilder();
-            CriteriaQuery<Object[]> query8 = cb4.createQuery(Object[].class);
-            Root<Region> region1 = query8.from(Region.class);
-            Join<Region, Teacher> teacher2 = region1.join("teachers", JoinType.LEFT);
-
-            query8.multiselect(region1.get("title"), cb4.count(teacher2))
-                    .where(
-                            cb4.or(
-                                    cb4.isFalse(teacher2.get("active")),
-                                    cb4.isNull(teacher2.get("active"))))
-                    .groupBy(region1.get("title"));
-
-        List<Object[]> inactiveTeachersCountPerRegion = em.createQuery(query8).getResultList();
-        for (Object[] row : inactiveTeachersCountPerRegion) {
+        for (Object[] row : countInactiveTeachersForAllRegions) {
             for (Object item : row) {
                 System.out.print(item + " ");
             }
             System.out.println();
         }
 
+        // Select for every region => region.title and count for inactive teachers per region - Criteria API
+        CriteriaBuilder cb4 = em.getCriteriaBuilder();
+        CriteriaQuery<Object[]> criteriaQuery1 = cb4.createQuery(Object[].class);
+        Root<Region> regionRoot = criteriaQuery1.from(Region.class);
+        Join<Region, Teacher> teacherJoin = regionRoot.join("teachers", JoinType.LEFT);
+
+        criteriaQuery1.multiselect(
+                regionRoot.get("title"),
+                cb.count(teacherJoin)
+        ).where(
+                cb4.or(
+                        cb4.isFalse(teacherJoin.get("active")),
+                        cb4.isNull(teacherJoin.get("active"))
+
+                )
+        ).groupBy(regionRoot.get("title"));
+
+        List<Object[]> countInactiveTeachersPerRegions = query7.getResultList();
+
+        for (Object[] row : countInactiveTeachersPerRegions) {
+            for (Object item : row) {
+                System.out.print(item + " ");
+            }
+            System.out.println();
+        }
+
+        List<Teacher> teachers7 = findByCriteria(null, null, true);
+            teachers7.forEach(System.out::println);
+    }
 
 
 
+
+    // filtering teachers με Multiple Criteria
+    public static List<Teacher> findByCriteria(String firstname, String lastname, Boolean active) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<Teacher> query = cb.createQuery(Teacher.class);
+        Root<Teacher> teacher = query.from(Teacher.class);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (firstname != null) {
+            predicates.add(cb.like(teacher.get("firstname"), firstname + "%"));
+        }
+
+        if (lastname != null) {
+            predicates.add(cb.like(teacher.get("lastname"), lastname + "%"));
+        }
+
+        if (active != null) {
+            predicates.add(cb.equal(teacher.get("active"), active));
+        }
+
+        query.where(predicates.toArray(new Predicate[0]));
+        return em.createQuery(query).getResultList();
     }
 }
